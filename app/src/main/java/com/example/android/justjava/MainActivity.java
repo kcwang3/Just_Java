@@ -1,10 +1,14 @@
 package com.example.android.justjava;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.text.NumberFormat;
 
@@ -25,6 +29,10 @@ public class MainActivity extends ActionBarActivity {
      * This method is called when the plus button is clicked.
      */
     public void increment(View view) {
+        if(quantity == 100){
+            Toast.makeText(this, "You can not have more than 100 coffees", Toast.LENGTH_SHORT).show();
+            return;
+        }
         quantity=quantity+1;
         display(quantity);
     }
@@ -33,6 +41,10 @@ public class MainActivity extends ActionBarActivity {
      * This method is called when the minus button is clicked.
      */
     public void decrement(View view) {
+        if(quantity == 1){
+            Toast.makeText(this, "You can not have less than 1 coffees", Toast.LENGTH_SHORT).show();
+            return;
+        }
         quantity=quantity-1;
         display(quantity);
     }
@@ -41,31 +53,64 @@ public class MainActivity extends ActionBarActivity {
      * This method is called when the order button is clicked.
      */
     public void submitOrder(View view) {
+
+        EditText nameField = (EditText) findViewById(R.id.name_field);
+        String name = nameField.getText().toString();
+
         CheckBox whippedCreamCheckBox = (CheckBox) findViewById(R.id.whipped_cream_checkbox);
-        int price = calculatePrice();
         boolean hasWhippedCream = whippedCreamCheckBox.isChecked();
-        String priceMessage=createOrderSummary(price,hasWhippedCream);
+        CheckBox chocolateCheckBox = (CheckBox) findViewById(R.id.chocolate_checkbox);
+        boolean hasChocolate = chocolateCheckBox.isChecked();
+
+        int price = calculatePrice(hasWhippedCream, hasChocolate);
+        String priceMessage=createOrderSummary(name, price, hasWhippedCream, hasChocolate);
+
+        Intent intent = new Intent(Intent.ACTION_SENDTO);
+        intent.setData(Uri.parse("mailto:")); // only email apps should handle this
+        intent.putExtra(Intent.EXTRA_SUBJECT, "Just Java order for "+name);
+        intent.putExtra(Intent.EXTRA_TEXT, priceMessage);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        }
+
         displayMessage(priceMessage);
         //displayPrice(quantity*5);
     }
 
     /**
      * Calculates the price of the order.
+     * @param  addWhippedCream is whether or not the user wants whipped cream topping
+     * @param  addChocolate is whether or not the user wants chocolate topping
      * @return total price
      */
-    private int calculatePrice(){
-        return quantity*5;
+    private int calculatePrice(boolean addWhippedCream, boolean addChocolate){
+        int basePrice = 5;
+
+        //Add 1 dollar if the user wants whipped cream
+        if(addWhippedCream){
+            basePrice = basePrice + 1;
+        }
+
+        //Add 2 dollar if the user wants  chocolate
+        if(addChocolate){
+            basePrice = basePrice + 2;
+        }
+
+        return quantity*basePrice;
     }
 
     /**
      * Create summary of the order.
+     * @param name of the customer
      * @param price of the order
      * @param addWhippedCream is whether or not the user wants whipped cream topping
+     * @param addChocolate is whether or not the user wants chocolate topping
      * @return text summary
      */
-    private String createOrderSummary(int price,boolean addWhippedCream){
-        String priceMessage = "Name: Kun-Chi";
+    private String createOrderSummary(String name, int price,boolean addWhippedCream, boolean addChocolate){
+        String priceMessage = "Name: " + name;
         priceMessage = priceMessage + "\nAdd whipped cream?" + addWhippedCream;
+        priceMessage = priceMessage + "\nAdd chocolate?" + addChocolate;
         priceMessage = priceMessage + "\nQuantity: " + quantity;
         priceMessage = priceMessage + "\nTotal: $" + price;
         priceMessage = priceMessage + "\nThank you.";
